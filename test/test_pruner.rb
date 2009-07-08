@@ -18,7 +18,7 @@ class TestPruner < Test::Unit::TestCase
     assert_equal @pruner.config[:secret_access_key], 'secret_access_key'
   end
   
-  def test_ec2
+  def test_ec2_connection
     stub_aws
     new_pruner
     assert_not_nil @pruner.ec2
