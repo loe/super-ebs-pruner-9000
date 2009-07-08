@@ -1,7 +1,0 @@
-History.txt
-Manifest.txt
-README.txt
-Rakefile
-bin/pruner
-lib/pruner.rb
-test/test_pruner.rb
