@@ -1,3 +1,21 @@
 #!/usr/bin/env ruby
+require 'optsparse'
 
-abort "you need to write me"
+options = {}
+OptionParser.new do |opts|
+  opts.banner = 'Usage: pruner [options]'
+  
+  # Mandatory argument.
+  opts.on('-C', '--config CONFIG', 'Relative path to config.yml') do |cfg|
+    options[:config_file_path] = cfg || '../config.yml'
+  end
+  
+  opts.on_tail('-h', '--help', 'Show this message') do
+    puts opts
+    exit
+  end
+  
+  opts.parse!
+end
+
+Pruner.new(options[:config_file_path])
