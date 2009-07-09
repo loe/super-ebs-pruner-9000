@@ -5,10 +5,18 @@ options = {}
 OptionParser.new do |opts|
   opts.banner = 'Usage: pruner [options]'
   
-  # Mandatory argument.
   opts.on('-C', '--config CONFIG', 'Relative path to config.yml') do |cfg|
     options[:config_file_path] = cfg || '../config.yml'
   end
+  
+  opts.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
+    options[:verbose] = v || true
+  end
+  
+  opts.on('-l', '--[not-]live', 'Run live') do |l|
+    options[:live] = l || false
+  end
+  
   
   opts.on_tail('-h', '--help', 'Show this message') do
     puts opts
@@ -18,4 +26,4 @@ OptionParser.new do |opts|
   opts.parse!
 end
 
-Pruner.new(options[:config_file_path])
+Pruner.new(options)

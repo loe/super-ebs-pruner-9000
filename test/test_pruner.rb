@@ -25,6 +25,7 @@ class TestPruner < Test::Unit::TestCase
       :aws_created_at => "Wed Jun 18 08:19:21 UTC 2008"}]
   end
   
+  # From RightAws::Ec2#describe_snapshots documentation.
   def snapshots_array
     [{:aws_progress   => "100%",
       :aws_status     => "completed",
@@ -46,7 +47,7 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def new_pruner
-    @pruner = Pruner.new('../config.yml')
+    @pruner = Pruner.new({:config_file_path => '../config.yml', :verbose => true, :live => true})
   end
   
   def setup
