@@ -6,12 +6,16 @@ options = {}
 OptionParser.new do |opts|
   opts.banner = 'Usage: pruner [options]'
   
-  opts.on('-i', '--aws-id ID', 'AWS ID') do |id|
-    options[:aws_id] = id || ''
+  options[:verbose] = true
+  options[:live] = false
+  options[:volumes] = []
+  
+  opts.on('-i', '--aws-id ID', String, 'AWS ID') do |id|
+    options[:aws_id] = id
   end
   
-  opts.on('-k', '--aws-key KEY', 'AWS Secret Key') do |key|
-    options[:aws_key] = key || ''
+  opts.on('-k', '--aws-key KEY', String, 'AWS Secret Key') do |key|
+    options[:aws_key] = key
   end
   
   opts.on('--volumes vol-1,vol-2,vol-3', Array, 'List of volumes to prune, skipping will default to all volumes on the account') do |list|
@@ -21,11 +25,11 @@ OptionParser.new do |opts|
   end
   
   opts.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
-    options[:verbose] = v || true
+    options[:verbose] = v
   end
   
   opts.on('-l', '--[not-]live', 'Run live') do |l|
-    options[:live] = l || false
+    options[:live] = l
   end
   
   opts.on_tail('-h', '--help', 'Show this message') do

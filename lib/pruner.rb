@@ -3,6 +3,7 @@ require 'right_aws'
 require 'activesupport'
 
 require File.expand_path(File.dirname(__FILE__) + '/pruner/version')
+require File.expand_path(File.dirname(__FILE__) + '/pruner/silence_ssl_warning')
 
 class Pruner
   attr_reader :options
@@ -45,20 +46,16 @@ class Pruner
   
   def apply_rules
     RULES.each do |rule|
-      if options[:verbose]
-        cached_size = old_snapshots.size
-        puts "#{rule[:name]}:"
-      end
-      
+      cached_size = old_snapshots.size if options[:verbose]
       apply_rule(rule)
-      
-      puts "  #{old_snapshots.size - cached_size}" if options[:verbose]
+      puts "#{rule[:name]}:  #{old_snapshots.size - cached_size}" if options[:verbose]
     end
   end
   
   def apply_rule(rule)
     # Gather the snapshots that might fall in the rule's time window.
     vulnerable_snaps = snapshots.select { |snap| snap[:aws_started_at] > rule[:after] && snap[:aws_started_at] < rule[:before]}
+    
     # Step across the rule's time window one interval at a time, keeping the last snapshot in that window.
     window_start = rule[:before] - rule[:interval]
     while window_start > rule[:after] do
@@ -68,7 +65,6 @@ class Pruner
       keeper = snaps_in_window.pop
       # Send the rest to die.
       @old_snapshots += snaps_in_window
-      
       # Shrink the window
       window_start -= rule[:interval]
     end
@@ -78,18 +74,18 @@ class Pruner
   def remove_snapshots
     puts "Removing #{old_snapshots.size} Snapshots:" if options[:verbose]
     old_snapshots.each do |snap|
-      puts "  #{snap[:aws_id]} - #{snap[:aws_started_at]}" if options[:verbose]
+      puts "  #{snap[:aws_id]} - #{snap[:aws_started_at]} (#{snap[:aws_volume_id]})" if options[:verbose]
       ec2.delete_snapshot(snap[:aws_id]) if options[:live]
     end
     old_snapshots
   end
   
   def ec2
-    @ec2 ||= RightAws::Ec2.new(options[:access_key_id], options[:secret_access_key])
+    @ec2 ||= RightAws::Ec2.new(options[:aws_id], options[:aws_key])
   end
   
   def volumes
-    @volumes ||= options[:volumes] ? options[:volumes] : ec2.describe_volumes 
+    @volumes ||= options[:volumes].empty? ? ec2.describe_volumes : options[:volumes]
   end
   
   def snapshots
