@@ -34,7 +34,7 @@ class TestPruner < Test::Unit::TestCase
     (1..48).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-yesterday-#{i}",
+       :aws_id         => "snap-yesterday-#{i}-#{Time.now.to_i}",
        :aws_started_at => yesterday - i * 30.minutes}
     end
   end
@@ -46,7 +46,7 @@ class TestPruner < Test::Unit::TestCase
     (1..14).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-last-week-#{i}",
+       :aws_id         => "snap-last-week-#{i}-#{Time.now.to_i}",
        :aws_started_at => last_week - i * 12.hours}
     end
   end
@@ -58,7 +58,7 @@ class TestPruner < Test::Unit::TestCase
     (1..31).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-last-month-#{i}",
+       :aws_id         => "snap-last-month-#{i}-#{Time.now.to_i}",
        :aws_started_at => last_month - i * 1.day}
     end
   end
@@ -70,7 +70,7 @@ class TestPruner < Test::Unit::TestCase
     (1..6).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-last-quarter-#{i}",
+       :aws_id         => "snap-last-quarter-#{i}-#{Time.now.to_i}",
        :aws_started_at => last_quarter - i * 3.days}
     end
   end
@@ -99,12 +99,16 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def new_pruner
-    @pruner = Pruner.new({:config_file_path => '../config.yml', :verbose => false, :live => true})
+    @pruner = Pruner.new({:config_file_path => '../config.yml.example', :verbose => false, :live => true})
   end
   
   def setup
     mock_aws
     new_pruner
+  end
+  
+  def teardown
+    @pruner = nil
   end
   
   def test_no_window_overlap
@@ -190,10 +194,10 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def test_prune!
-    dead_snaps = (24 + 7 + 15 + 3 + 4) * 2
+    dead_snaps = 24 + 7 + 15 + 3 + 4
     @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array).twice
-    @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
+    @mock_ec2.expects(:delete_snapshot).times(dead_snaps * 2) # One set for each test volume
     @pruner.prune!
   end
 end

@@ -61,7 +61,7 @@ class Pruner
     
     # Step across the rule's time window one interval at a time, keeping the last snapshot in that window.
     window_start = rule[:before] - rule[:interval]
-    while window_start >= rule[:after] do
+    while window_start > rule[:after] do
       # Gather snaps in the window
       snaps_in_window = vulnerable_snaps.select { |snap| snap[:aws_started_at] > window_start && snap[:aws_started_at] < window_start + rule[:interval]}
       
@@ -74,10 +74,11 @@ class Pruner
       # Shrink the window
       window_start -= rule[:interval]
     end
+    old_snapshots.uniq!
   end
   
   def remove_snapshots
-    old_snapshots.uniq.each do |snap|
+    old_snapshots.each do |snap|
       puts "Removing #{snap[:aws_id]} - #{snap[:aws_started_at]}" if verbose
       ec2.delete_snapshot(snap[:aws_id]) if live
     end
