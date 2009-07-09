@@ -27,15 +27,67 @@ class TestPruner < Test::Unit::TestCase
       :aws_created_at => NOW - 3.days}]
   end
   
-  # This progression will generate started_at times going back about 26 months, enough to test each rule set.
+  # Generate a set that we can prune from with known results.
+  # RULES = [HOURLY_AFTER_A_DAY, DAILY_AFTER_A_WEEK, EVERY_OTHER_DAY_AFTER_A_MONTH, WEEKLY_AFTER_A_QUARTER, EVERY_THREE_WEEKS_AFTER_TWO_YEARS]
   def snapshots_array
-    @snapshots_array ||= (0..499).map do |i|
+    snaps = []
+    
+    # Generate twice hourly for yesterday
+    # Should result in 24 deleted snapshots.
+    yesterday = NOW - 1.day.at_midnight
+    snaps += (1..48) do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
        :aws_id         => "snap-#{i}",
        :aws_volume_id  => "vol-60957009",
-       :aws_started_at => NOW - i.minutes ** 1.75}
+       :aws_started_at => yesterday + i * 30.minutes}
     end
+     
+    # Generate 2 times daily for last week.
+    # Should result in 7 deleted snapshots.
+    last_week = NOW - 1.week.at_midnight
+    snaps += (1..14) do |i|
+      {:aws_progress   => "100%",
+       :aws_status     => "completed",
+       :aws_id         => "snap-#{i}",
+       :aws_volume_id  => "vol-60957009",
+       :aws_started_at => last_week + i * 12.hours}
+    end
+    
+    # Generate daily for last month.
+    # Should result in 15 deleted snapshots.
+    last_month = NOW - 1.month.at_midnight
+    snaps += (1..31) do |i|
+      {:aws_progress   => "100%",
+       :aws_status     => "completed",
+       :aws_id         => "snap-#{i}",
+       :aws_volume_id  => "vol-60957009",
+       :aws_started_at => last_month + i * 1.day}
+    end
+    
+    # Generate 2 weekly for last quarter.
+    # Should result in 3 deleted snapshots.
+    last_quarter = NOW - 3.months.at_midnight
+    snaps += (1..6) do |i|
+      {:aws_progress   => "100%",
+       :aws_status     => "completed",
+       :aws_id         => "snap-#{i}",
+       :aws_volume_id  => "vol-60957009",
+       :aws_started_at => last_quarter + i * 3.days}
+    end
+    
+    # Generate weekly for last two years.
+    # Should result in ?? deleted snapshots.
+    two_years_ago = NOW - 2.years.at_midnight
+    snaps += (1..6) do |i|
+      {:aws_progress   => "100%",
+       :aws_status     => "completed",
+       :aws_id         => "snap-#{i}",
+       :aws_volume_id  => "vol-60957009",
+       :aws_started_at => two_years_ago + i * 1.week}
+    end
+    
+    snaps
   end
   
   def stub_aws
