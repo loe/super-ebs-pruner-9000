@@ -26,4 +26,4 @@ OptionParser.new do |opts|
   opts.parse!
 end
 
-Pruner.new(options)
+Pruner.new(options).prune!

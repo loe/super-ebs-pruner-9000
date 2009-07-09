@@ -27,13 +27,14 @@ class TestPruner < Test::Unit::TestCase
       :aws_created_at => NOW - 3.days}]
   end
   
+  # This progression will generate started_at times going back about 26 months, enough to test each rule set.
   def snapshots_array
-    (1..1000).map do |i|
+    @snapshots_array ||= (0..499).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
        :aws_id         => "snap-#{i}",
        :aws_volume_id  => "vol-60957009",
-       :aws_started_at => NOW - (10 * i.minutes)}
+       :aws_started_at => NOW - i.minutes ** 1.75}
     end
   end
   
@@ -45,7 +46,7 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def new_pruner
-    @pruner = Pruner.new({:config_file_path => '../config.yml', :verbose => true, :live => true})
+    @pruner = Pruner.new({:config_file_path => '../config.yml', :verbose => false, :live => true})
   end
   
   def setup
@@ -70,7 +71,23 @@ class TestPruner < Test::Unit::TestCase
     assert_equal @pruner.volumes, volumes_array
   end
   
-  def test_snapshots
-    assert_equal @pruner.snapshots(@pruner.volumes.first), snapshots_array
+  def test_find_volume_snapshots
+    assert_equal @pruner.find_volume_snapshots(@pruner.volumes.first), snapshots_array
+  end
+  
+  def test_find_all_snapshots
+    @pruner.find_all_snapshots
+    assert_equal @pruner.snapshots, snapshots_array + snapshots_array
+  end
+  
+  def test_apply_rules
+    @pruner.snapshots = snapshots_array
+    @pruner.apply_rules
+    assert_equal @pruner.old_snapshots.size, 316
+  end
+  
+  def test_prune!
+    @pruner.ec2.expects(:delete_snapshot).times(633)
+    @pruner.prune!
   end
 end
