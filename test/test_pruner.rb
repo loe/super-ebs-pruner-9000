@@ -5,6 +5,8 @@ require 'pruner'
 
 class TestPruner < Test::Unit::TestCase
   
+  NOW = Time.now
+  
   # From RightAws::Ec2#describe_instances documentation.
   def volumes_array
     [{:aws_size              => 94,
@@ -12,31 +14,27 @@ class TestPruner < Test::Unit::TestCase
       :aws_attachment_status => "attached",
       :zone                  => "merlot",
       :snapshot_id           => nil,
-      :aws_attached_at       => "Wed Jun 18 08:19:28 UTC 2008",
+      :aws_attached_at       => NOW - 2.days,
       :aws_status            => "in-use",
       :aws_id                => "vol-60957009",
-      :aws_created_at        => "Wed Jun 18 08:19:20s UTC 2008",
+      :aws_created_at        => NOW - 3.days,
       :aws_instance_id       => "i-c014c0a9"},
      {:aws_size       => 1,
       :zone           => "merlot",
       :snapshot_id    => nil,
       :aws_status     => "available",
       :aws_id         => "vol-58957031",
-      :aws_created_at => "Wed Jun 18 08:19:21 UTC 2008"}]
+      :aws_created_at => NOW - 3.days}]
   end
   
-  # From RightAws::Ec2#describe_snapshots documentation.
   def snapshots_array
-    [{:aws_progress   => "100%",
-      :aws_status     => "completed",
-      :aws_id         => "snap-72a5401b",
-      :aws_volume_id  => "vol-5582673c",
-      :aws_started_at => "2008-02-23T02:50:48.000Z"},
-     {:aws_progress   => "100%",
-      :aws_status     => "completed",
-      :aws_id         => "snap-75a5401c",
-      :aws_volume_id  => "vol-5582673c",
-      :aws_started_at => "2008-02-23T16:23:19.000Z"}]
+    (1..1000).map do |i|
+      {:aws_progress   => "100%",
+       :aws_status     => "completed",
+       :aws_id         => "snap-#{i}",
+       :aws_volume_id  => "vol-60957009",
+       :aws_started_at => NOW - (10 * i.minutes)}
+    end
   end
   
   def stub_aws
