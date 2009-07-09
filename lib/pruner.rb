@@ -24,11 +24,11 @@ class Pruner
   WEEKLY_AFTER_A_QUARTER =             {:after => NOW - 2.years,
                                         :before => NOW - 3.months,
                                         :interval => 1.week}
-  EVERY_THREE_WEEKs_AFTER_TWO_YEARS =  {:after => NOW - 10.years,
+  EVERY_THREE_WEEKS_AFTER_TWO_YEARS =  {:after => NOW - 10.years,
                                         :before => NOW - 2.years,
                                         :interval => 3.weeks}
   
-  RULES = [HOURLY_AFTER_A_DAY, DAILY_AFTER_A_WEEK, EVERY_OTHER_DAY_AFTER_A_MONTH, WEEKLY_AFTER_A_QUARTER, EVERY_THREE_WEEKs_AFTER_TWO_YEARS]
+  RULES = [HOURLY_AFTER_A_DAY, DAILY_AFTER_A_WEEK, EVERY_OTHER_DAY_AFTER_A_MONTH, WEEKLY_AFTER_A_QUARTER, EVERY_THREE_WEEKS_AFTER_TWO_YEARS]
   
   def initialize(options ={})
     @config =         YAML.load_file(File.dirname(__FILE__) + "/#{options[:config_file_path]}").symbolize_keys
@@ -52,24 +52,28 @@ class Pruner
   
   def apply_rules
     RULES.each do |rule|
-      # Gather the snapshots that might fall in the rule's time window.
-      vulnerable_snaps = snapshots.select { |snap| snap[:aws_started_at] > rule[:after] && snap[:aws_started_at] < rule[:before]}
+      apply_rule(rule)
+    end
+  end
+  
+  def apply_rule(rule)
+    # Gather the snapshots that might fall in the rule's time window.
+    vulnerable_snaps = snapshots.select { |snap| snap[:aws_started_at] > rule[:after] && snap[:aws_started_at] < rule[:before]}
+    
+    # Step across the rule's time window one interval at a time, keeping the last snapshot in that window.
+    window_start = rule[:before] - rule[:interval]
+    while window_start >= rule[:after] do
+      # Gather snaps in the window
+      snaps_in_window = vulnerable_snaps.select { |snap| snap[:aws_started_at] > window_start && snap[:aws_started_at] < window_start + rule[:interval]}
       
-      # Step across the rule's time window one interval at a time, keeping the last snapshot in that window.
-      window_start = rule[:before] - rule[:interval]
-      while window_start > rule[:after] do
-        # Gather snaps in the window
-        snaps_in_window = vulnerable_snaps.select { |snap| snap[:aws_started_at] > window_start && snap[:aws_started_at] < window_start + rule[:interval]}
-        
-        # The last one in the selection survives
-        snaps_in_window.pop
-        
-        # Send the rest to die.
-        @old_snapshots += snaps_in_window
-        
-        # Shrink the window
-        window_start -= rule[:interval]
-      end
+      # The last one in the selection survives
+      snaps_in_window.pop
+      
+      # Send the rest to die.
+      @old_snapshots += snaps_in_window
+      
+      # Shrink the window
+      window_start -= rule[:interval]
     end
   end
   

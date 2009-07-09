@@ -34,57 +34,57 @@ class TestPruner < Test::Unit::TestCase
     
     # Generate twice hourly for yesterday
     # Should result in 24 deleted snapshots.
-    yesterday = NOW - 1.day.at_midnight
-    snaps += (1..48) do |i|
+    yesterday = NOW - 1.day
+    snaps += (1..48).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-#{i}",
+       :aws_id         => "snap-yesterday-#{i}",
        :aws_volume_id  => "vol-60957009",
-       :aws_started_at => yesterday + i * 30.minutes}
+       :aws_started_at => yesterday - i * 30.minutes}
     end
      
     # Generate 2 times daily for last week.
     # Should result in 7 deleted snapshots.
-    last_week = NOW - 1.week.at_midnight
-    snaps += (1..14) do |i|
+    last_week = NOW - 1.week
+    snaps += (1..14).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-#{i}",
+       :aws_id         => "snap-last-week-#{i}",
        :aws_volume_id  => "vol-60957009",
-       :aws_started_at => last_week + i * 12.hours}
+       :aws_started_at => last_week - i * 12.hours}
     end
     
     # Generate daily for last month.
     # Should result in 15 deleted snapshots.
-    last_month = NOW - 1.month.at_midnight
-    snaps += (1..31) do |i|
+    last_month = NOW - 1.month
+    snaps += (1..31).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-#{i}",
+       :aws_id         => "snap-last-month-#{i}",
        :aws_volume_id  => "vol-60957009",
-       :aws_started_at => last_month + i * 1.day}
+       :aws_started_at => last_month - i * 1.day}
     end
     
     # Generate 2 weekly for last quarter.
     # Should result in 3 deleted snapshots.
-    last_quarter = NOW - 3.months.at_midnight
-    snaps += (1..6) do |i|
+    last_quarter = NOW - 3.months
+    snaps += (1..6).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-#{i}",
+       :aws_id         => "snap-last-quarter-#{i}",
        :aws_volume_id  => "vol-60957009",
-       :aws_started_at => last_quarter + i * 3.days}
+       :aws_started_at => last_quarter - i * 3.days}
     end
     
     # Generate weekly for last two years.
-    # Should result in ?? deleted snapshots.
-    two_years_ago = NOW - 2.years.at_midnight
-    snaps += (1..6) do |i|
-      {:aws_progress   => "100%",
-       :aws_status     => "completed",
-       :aws_id         => "snap-#{i}",
-       :aws_volume_id  => "vol-60957009",
-       :aws_started_at => two_years_ago + i * 1.week}
+    # Should result in 4 deleted snapshots.
+    two_years_ago = NOW - 2.years
+      snaps += (1..6).map do |i|
+        {:aws_progress   => "100%",
+         :aws_status     => "completed",
+         :aws_id         => "snap-two-years-ago-#{i}",
+         :aws_volume_id  => "vol-60957009",
+         :aws_started_at => two_years_ago - i * 1.week}
     end
     
     snaps
@@ -132,14 +132,44 @@ class TestPruner < Test::Unit::TestCase
     assert_equal @pruner.snapshots, snapshots_array + snapshots_array
   end
   
+  def test_apply_rule_HOURLY_AFTER_A_DAY
+    @pruner.snapshots = snapshots_array
+    @pruner.apply_rule(Pruner::HOURLY_AFTER_A_DAY)
+    assert_equal @pruner.old_snapshots.size, 24
+  end
+  
+  def test_apply_rule_DAILY_AFTER_A_WEEK
+    @pruner.snapshots = snapshots_array
+    @pruner.apply_rule(Pruner::DAILY_AFTER_A_WEEK)
+    assert_equal @pruner.old_snapshots.size, 7
+  end
+  
+  def test_apply_rule_EVERY_OTHER_DAY_AFTER_A_MONTH
+    @pruner.snapshots = snapshots_array
+    @pruner.apply_rule(Pruner::EVERY_OTHER_DAY_AFTER_A_MONTH)
+    assert_equal @pruner.old_snapshots.size, 15
+  end
+  
+  def test_apply_rule_WEEKLY_AFTER_A_QUARTER
+    @pruner.snapshots = snapshots_array
+    @pruner.apply_rule(Pruner::WEEKLY_AFTER_A_QUARTER)
+    assert_equal @pruner.old_snapshots.size, 3
+  end
+  
+  def test_apply_rule_EVERY_THREE_WEEKS_AFTER_TWO_YEARS
+    @pruner.snapshots = snapshots_array
+    @pruner.apply_rule(Pruner::EVERY_THREE_WEEKS_AFTER_TWO_YEARS)
+    assert_equal @pruner.old_snapshots.size, 4
+  end
+  
   def test_apply_rules
     @pruner.snapshots = snapshots_array
     @pruner.apply_rules
-    assert_equal @pruner.old_snapshots.size, 316
+    assert_equal @pruner.old_snapshots.size, 24 + 7 + 15 + 3 + 4
   end
   
   def test_prune!
-    @pruner.ec2.expects(:delete_snapshot).times(633)
+    @pruner.ec2.expects(:delete_snapshot)
     @pruner.prune!
   end
 end
