@@ -3,7 +3,7 @@ require 'yaml'
 require 'right_aws'
 require 'activesupport'
 
-require 'pruner/version'
+require File.expand_path(File.dirname(__FILE__) + '/pruner/version')
 
 class Pruner
   attr_reader :config, :live, :verbose, :ec2, :volumes
@@ -38,15 +38,13 @@ class Pruner
   end
   
   def prune!
-    find_all_snapshots
+    find_snapshots
     apply_rules
     remove_snapshots
   end
   
-  def find_all_snapshots
-    volumes.each do |vol|
-      @snapshots += find_volume_snapshots(vol)
-    end
+  def find_snapshots
+    @snapshots = ec2.describe_snapshots
   end
   
   def apply_rules
@@ -96,11 +94,5 @@ class Pruner
       end
     end
     @volumes
-  end
-  
-  def find_volume_snapshots(volume)
-    snaps = ec2.describe_snapshots(volume[:aws_id])
-    puts "Found #{snaps.size} Snapshots for Volume #{volume[:aws_id]}" if verbose
-    snaps
   end
 end
