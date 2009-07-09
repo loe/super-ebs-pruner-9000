@@ -7,7 +7,7 @@ require File.expand_path(File.dirname(__FILE__) + '/pruner/version')
 
 class Pruner
   attr_reader :config, :live, :verbose, :ec2, :volumes
-  attr_accessor :snapshots, :old_snapshots
+  attr_accessor :ec2, :volumes, :snapshots, :old_snapshots
   
   NOW = Time.now
   
@@ -33,18 +33,12 @@ class Pruner
     @config =         YAML.load_file(File.dirname(__FILE__) + "/#{options[:config_file_path]}").symbolize_keys
     @live =           options[:live]
     @verbose =        options[:verbose]
-    @snapshots =      []
     @old_snapshots =  []
   end
   
   def prune!
-    find_snapshots
     apply_rules
     remove_snapshots
-  end
-  
-  def find_snapshots
-    @snapshots = ec2.describe_snapshots
   end
   
   def apply_rules
@@ -87,12 +81,11 @@ class Pruner
   
   def volumes
     @volumes ||= ec2.describe_volumes
-    if verbose
-      puts "Found #{@volumes.size} Volumes:"
-      @volumes.each do |vol|
-        puts "  #{vol[:aws_id]}"
-      end
+  end
+  
+  def snapshots
+    @snapshots ||= ec2.describe_snapshots.select do |snap|
+      volumes.any? { |vol| vol[:aws_id] == snap[:aws_volume_id]}
     end
-    @volumes
   end
 end

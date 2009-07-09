@@ -35,6 +35,7 @@ class TestPruner < Test::Unit::TestCase
       {:aws_progress   => "100%",
        :aws_status     => "completed",
        :aws_id         => "snap-yesterday-#{i}",
+       :aws_volume_id  => "vol-60957009", 
        :aws_started_at => yesterday - i * 30.minutes}
     end
   end
@@ -47,6 +48,7 @@ class TestPruner < Test::Unit::TestCase
       {:aws_progress   => "100%",
        :aws_status     => "completed",
        :aws_id         => "snap-last-week-#{i}",
+       :aws_volume_id  => "vol-60957009",
        :aws_started_at => last_week - i * 12.hours}
     end
   end
@@ -59,6 +61,7 @@ class TestPruner < Test::Unit::TestCase
       {:aws_progress   => "100%",
        :aws_status     => "completed",
        :aws_id         => "snap-last-month-#{i}",
+       :aws_volume_id  => "vol-60957009",
        :aws_started_at => last_month - i * 1.day}
     end
   end
@@ -71,6 +74,7 @@ class TestPruner < Test::Unit::TestCase
       {:aws_progress   => "100%",
        :aws_status     => "completed",
        :aws_id         => "snap-last-quarter-#{i}",
+       :aws_volume_id  => "vol-60957009",
        :aws_started_at => last_quarter - i * 3.days}
     end
   end
@@ -83,6 +87,7 @@ class TestPruner < Test::Unit::TestCase
       {:aws_progress   => "100%",
        :aws_status     => "completed",
        :aws_id         => "snap-two-years-ago-#{i}",
+       :aws_volume_id  => "vol-60957009",
        :aws_started_at => two_years_ago - i * 1.week}
     end
   end
@@ -136,17 +141,10 @@ class TestPruner < Test::Unit::TestCase
     assert_equal @pruner.volumes, volumes_array
   end
   
-  def test_find_volume_snapshots
+  def test_snapshots
     @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array).once
-    assert_equal @pruner.find_volume_snapshots(@pruner.volumes.first), snapshots_array
-  end
-  
-  def test_find_all_snapshots
-    @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
-    @mock_ec2.expects(:describe_snapshots).returns(snapshots_array).twice
-    @pruner.find_all_snapshots
-    assert_equal @pruner.snapshots, snapshots_array + snapshots_array # Once for each test volume
+    assert_equal @pruner.snapshots, snapshots_array
   end
   
   def test_apply_rule_HOURLY_AFTER_A_DAY
@@ -194,10 +192,10 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def test_prune!
-    dead_snaps = (24 + 7 + 15 + 6 + 32) * 2
+    dead_snaps = 24 + 7 + 15 + 6 + 32
     @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
-    @mock_ec2.expects(:describe_snapshots).returns(snapshots_array).twice
-    @mock_ec2.expects(:delete_snapshot).times(dead_snaps) # One set for each test volume, but they are uniq'd
+    @mock_ec2.expects(:describe_snapshots).returns(snapshots_array).once
+    @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
     @pruner.prune!
   end
 end
