@@ -2,7 +2,6 @@ require 'rubygems'
 require 'yaml'
 require 'right_aws'
 require 'activesupport'
-require 'pp'
 
 require 'pruner/version'
 
@@ -78,7 +77,7 @@ class Pruner
   end
   
   def remove_snapshots
-    old_snapshots.each do |snap|
+    old_snapshots.uniq.each do |snap|
       puts "Removing #{snap[:aws_id]} - #{snap[:aws_started_at]}" if verbose
       ec2.delete_snapshot(snap[:aws_id]) if live
     end
