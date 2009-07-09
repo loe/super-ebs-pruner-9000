@@ -6,8 +6,18 @@ options = {}
 OptionParser.new do |opts|
   opts.banner = 'Usage: pruner [options]'
   
-  opts.on('-C', '--config CONFIG', 'Relative path to config.yml') do |cfg|
-    options[:config_file_path] = cfg || '../config.yml'
+  opts.on('-i', '--aws-id ID', 'AWS ID') do |id|
+    options[:aws_id] = id || ''
+  end
+  
+  opts.on('-k', '--aws-key KEY', 'AWS Secret Key') do |key|
+    options[:aws_key] = key || ''
+  end
+  
+  opts.on('--volumes vol-1,vol-2,vol-3', Array, 'List of volumes to prune, skipping will default to all volumes on the account') do |list|
+    list.each do |v|
+      options[:volumes] << {:aws_id => v}
+    end
   end
   
   opts.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
@@ -17,7 +27,6 @@ OptionParser.new do |opts|
   opts.on('-l', '--[not-]live', 'Run live') do |l|
     options[:live] = l || false
   end
-  
   
   opts.on_tail('-h', '--help', 'Show this message') do
     puts opts

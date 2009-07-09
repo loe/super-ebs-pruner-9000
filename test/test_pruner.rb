@@ -9,22 +9,8 @@ class TestPruner < Test::Unit::TestCase
   
   # From RightAws::Ec2#describe_instances documentation.
   def volumes_array
-    [{:aws_size              => 94,
-      :aws_device            => "/dev/sdc",
-      :aws_attachment_status => "attached",
-      :zone                  => "merlot",
-      :snapshot_id           => nil,
-      :aws_attached_at       => NOW - 2.days,
-      :aws_status            => "in-use",
-      :aws_id                => "vol-60957009",
-      :aws_created_at        => NOW - 3.days,
-      :aws_instance_id       => "i-c014c0a9"},
-     {:aws_size       => 1,
-      :zone           => "merlot",
-      :snapshot_id    => nil,
-      :aws_status     => "available",
-      :aws_id         => "vol-58957031",
-      :aws_created_at => NOW - 3.days}]
+    [{:aws_id => "vol-60957009"},
+     {:aws_id => "vol-58957031"}]
   end
   
   # Generate twice hourly for yesterday
@@ -104,7 +90,7 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def new_pruner
-    @pruner = Pruner.new({:config_file_path => '../config.yml.example', :verbose => true, :live => true})
+    @pruner = Pruner.new({:verbose => true, :live => true})
   end
   
   def setup
@@ -125,11 +111,6 @@ class TestPruner < Test::Unit::TestCase
   
   def test_version
     assert_not_nil Pruner::VERSION
-  end
-  
-  def test_config_parsing
-    assert_equal @pruner.config[:access_key_id], 'access_key'
-    assert_equal @pruner.config[:secret_access_key], 'secret_access_key'
   end
   
   def test_ec2

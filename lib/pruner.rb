@@ -1,38 +1,40 @@
 require 'rubygems'
-require 'yaml'
 require 'right_aws'
 require 'activesupport'
 
 require File.expand_path(File.dirname(__FILE__) + '/pruner/version')
 
 class Pruner
-  attr_reader :config, :live, :verbose, :ec2, :volumes
+  attr_reader :options
   attr_accessor :ec2, :volumes, :snapshots, :old_snapshots
   
   NOW = Time.now
   
   HOURLY_AFTER_A_DAY =                 {:after => NOW - 1.week,
                                         :before => NOW - 1.day,
-                                        :interval => 1.hour}
+                                        :interval => 1.hour,
+                                        :name => 'Hourly After A Day'}
   DAILY_AFTER_A_WEEK =                 {:after => NOW - 1.month,
                                         :before => NOW - 1.week,
-                                        :interval => 24.hours}
+                                        :interval => 24.hours,
+                                        :name => 'Daily After A Week'}
   EVERY_OTHER_DAY_AFTER_A_MONTH =      {:after => NOW - 3.month,
                                         :before => NOW - 1.month,
-                                        :interval => 48.hours}
+                                        :interval => 48.hours,
+                                        :name => 'Every Other Day After A Month'}
   WEEKLY_AFTER_A_QUARTER =             {:after => NOW - 2.years,
                                         :before => NOW - 3.months,
-                                        :interval => 1.week}
+                                        :interval => 1.week,
+                                        :name => 'Weekly After A Quarter'}
   EVERY_THREE_WEEKS_AFTER_TWO_YEARS =  {:after => NOW - 10.years,
                                         :before => NOW - 2.years,
-                                        :interval => 3.weeks}
+                                        :interval => 3.weeks,
+                                        :name => 'Every Three Weeks After Two Years'}
   
   RULES = [HOURLY_AFTER_A_DAY, DAILY_AFTER_A_WEEK, EVERY_OTHER_DAY_AFTER_A_MONTH, WEEKLY_AFTER_A_QUARTER, EVERY_THREE_WEEKS_AFTER_TWO_YEARS]
   
   def initialize(options ={})
-    @config =         YAML.load_file(File.dirname(__FILE__) + "/#{options[:config_file_path]}").symbolize_keys
-    @live =           options[:live]
-    @verbose =        options[:verbose]
+    @options =        options
     @old_snapshots =  []
   end
   
@@ -43,7 +45,14 @@ class Pruner
   
   def apply_rules
     RULES.each do |rule|
+      if options[:verbose]
+        cached_size = old_snapshots.size
+        puts "#{rule[:name]}:"
+      end
+      
       apply_rule(rule)
+      
+      puts "  #{old_snapshots.size - cached_size}" if options[:verbose]
     end
   end
   
@@ -67,20 +76,20 @@ class Pruner
   end
   
   def remove_snapshots
-    puts "Removing #{old_snapshots.size} Snapshots:" if verbose
+    puts "Removing #{old_snapshots.size} Snapshots:" if options[:verbose]
     old_snapshots.each do |snap|
-      puts "  #{snap[:aws_id]} - #{snap[:aws_started_at]}" if verbose
-      ec2.delete_snapshot(snap[:aws_id]) if live
+      puts "  #{snap[:aws_id]} - #{snap[:aws_started_at]}" if options[:verbose]
+      ec2.delete_snapshot(snap[:aws_id]) if options[:live]
     end
     old_snapshots
   end
   
   def ec2
-    @ec2 ||= RightAws::Ec2.new(config[:access_key_id], config[:secret_access_key])
+    @ec2 ||= RightAws::Ec2.new(options[:access_key_id], options[:secret_access_key])
   end
   
   def volumes
-    @volumes ||= ec2.describe_volumes
+    @volumes ||= options[:volumes] ? options[:volumes] : ec2.describe_volumes 
   end
   
   def snapshots
