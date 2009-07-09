@@ -34,7 +34,7 @@ class TestPruner < Test::Unit::TestCase
     (1..48).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-yesterday-#{i}-#{Time.now.to_i}",
+       :aws_id         => "snap-yesterday-#{i}",
        :aws_started_at => yesterday - i * 30.minutes}
     end
   end
@@ -46,7 +46,7 @@ class TestPruner < Test::Unit::TestCase
     (1..14).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-last-week-#{i}-#{Time.now.to_i}",
+       :aws_id         => "snap-last-week-#{i}",
        :aws_started_at => last_week - i * 12.hours}
     end
   end
@@ -55,31 +55,31 @@ class TestPruner < Test::Unit::TestCase
   # Should result in 15 deleted snapshots
   def daily_last_month
     last_month = NOW - 1.month
-    (1..31).map do |i|
+    (1..30).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-last-month-#{i}-#{Time.now.to_i}",
+       :aws_id         => "snap-last-month-#{i}",
        :aws_started_at => last_month - i * 1.day}
     end
   end
   
    # Generate 2 weekly for last quarter.
-   # Should result in 3 deleted snapshots.
+   # Should result in 6 deleted snapshots.
   def twice_weekly_last_quarter
     last_quarter = NOW - 3.months
-    (1..6).map do |i|
+    (1..12).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
-       :aws_id         => "snap-last-quarter-#{i}-#{Time.now.to_i}",
+       :aws_id         => "snap-last-quarter-#{i}",
        :aws_started_at => last_quarter - i * 3.days}
     end
   end
   
   # Generate weekly for last two years.
-  # Should result in 4 deleted snapshots.
+  # Should result in 16 deleted snapshots.
   def weekly_two_years_ago
     two_years_ago = NOW - 2.years
-    (1..6).map do |i|
+    (1..48).map do |i|
       {:aws_progress   => "100%",
        :aws_status     => "completed",
        :aws_id         => "snap-two-years-ago-#{i}",
@@ -99,7 +99,7 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def new_pruner
-    @pruner = Pruner.new({:config_file_path => '../config.yml.example', :verbose => false, :live => true})
+    @pruner = Pruner.new({:config_file_path => '../config.yml.example', :verbose => true, :live => true})
   end
   
   def setup
@@ -150,43 +150,43 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def test_apply_rule_HOURLY_AFTER_A_DAY
-    @pruner.snapshots = snapshots_array
+    @pruner.snapshots = twice_hourly_yesterday
     @pruner.apply_rule(Pruner::HOURLY_AFTER_A_DAY)
     assert_equal @pruner.old_snapshots.size, 24
   end
   
   def test_apply_rule_DAILY_AFTER_A_WEEK
-    @pruner.snapshots = snapshots_array
+    @pruner.snapshots = twice_daily_last_week
     @pruner.apply_rule(Pruner::DAILY_AFTER_A_WEEK)
     assert_equal @pruner.old_snapshots.size, 7
   end
   
   def test_apply_rule_EVERY_OTHER_DAY_AFTER_A_MONTH
-    @pruner.snapshots = snapshots_array
+    @pruner.snapshots = daily_last_month
     @pruner.apply_rule(Pruner::EVERY_OTHER_DAY_AFTER_A_MONTH)
     assert_equal @pruner.old_snapshots.size, 15
   end
   
   def test_apply_rule_WEEKLY_AFTER_A_QUARTER
-    @pruner.snapshots = snapshots_array
+    @pruner.snapshots = twice_weekly_last_quarter
     @pruner.apply_rule(Pruner::WEEKLY_AFTER_A_QUARTER)
-    assert_equal @pruner.old_snapshots.size, 3
+    assert_equal @pruner.old_snapshots.size, 6
   end
   
   def test_apply_rule_EVERY_THREE_WEEKS_AFTER_TWO_YEARS
-    @pruner.snapshots = snapshots_array
+    @pruner.snapshots = weekly_two_years_ago
     @pruner.apply_rule(Pruner::EVERY_THREE_WEEKS_AFTER_TWO_YEARS)
-    assert_equal @pruner.old_snapshots.size, 4
+    assert_equal @pruner.old_snapshots.size, 32
   end
   
   def test_apply_rules
     @pruner.snapshots = snapshots_array
     @pruner.apply_rules
-    assert_equal @pruner.old_snapshots.size, 24 + 7 + 15 + 3 + 4
+    assert_equal @pruner.old_snapshots.size, 24 + 7 + 15 + 6 + 32
   end
   
   def test_remove_snapshots
-    dead_snaps = 24 + 7 + 15 + 3 + 4
+    dead_snaps = 24 + 7 + 15 + 6 + 32
     @pruner.snapshots = snapshots_array
     @pruner.apply_rules
     @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
@@ -194,10 +194,10 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def test_prune!
-    dead_snaps = 24 + 7 + 15 + 3 + 4
+    dead_snaps = (24 + 7 + 15 + 6 + 32) * 2
     @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array).twice
-    @mock_ec2.expects(:delete_snapshot).times(dead_snaps * 2) # One set for each test volume
+    @mock_ec2.expects(:delete_snapshot).times(dead_snaps) # One set for each test volume, but they are uniq'd
     @pruner.prune!
   end
 end

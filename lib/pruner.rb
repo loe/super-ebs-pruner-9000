@@ -58,16 +58,13 @@ class Pruner
   def apply_rule(rule)
     # Gather the snapshots that might fall in the rule's time window.
     vulnerable_snaps = snapshots.select { |snap| snap[:aws_started_at] > rule[:after] && snap[:aws_started_at] < rule[:before]}
-    
     # Step across the rule's time window one interval at a time, keeping the last snapshot in that window.
     window_start = rule[:before] - rule[:interval]
     while window_start > rule[:after] do
       # Gather snaps in the window
       snaps_in_window = vulnerable_snaps.select { |snap| snap[:aws_started_at] > window_start && snap[:aws_started_at] < window_start + rule[:interval]}
-      
-      # The last one in the selection survives
-      snaps_in_window.pop
-      
+      # The first one in the selection survives
+      keeper = snaps_in_window.pop
       # Send the rest to die.
       @old_snapshots += snaps_in_window
       
@@ -78,8 +75,9 @@ class Pruner
   end
   
   def remove_snapshots
+    puts "Removing #{old_snapshots.size} Snapshots:" if verbose
     old_snapshots.each do |snap|
-      puts "Removing #{snap[:aws_id]} - #{snap[:aws_started_at]}" if verbose
+      puts "  #{snap[:aws_id]} - #{snap[:aws_started_at]}" if verbose
       ec2.delete_snapshot(snap[:aws_id]) if live
     end
     old_snapshots
@@ -92,7 +90,7 @@ class Pruner
   def volumes
     @volumes ||= ec2.describe_volumes
     if verbose
-      puts "#{@volumes.size} Volumes:"
+      puts "Found #{@volumes.size} Volumes:"
       @volumes.each do |vol|
         puts "  #{vol[:aws_id]}"
       end
@@ -102,7 +100,7 @@ class Pruner
   
   def find_volume_snapshots(volume)
     snaps = ec2.describe_snapshots(volume[:aws_id])
-    puts "#{snaps.size} Snapshots for Volume #{volume[:aws_id]}" if verbose
+    puts "Found #{snaps.size} Snapshots for Volume #{volume[:aws_id]}" if verbose
     snaps
   end
 end
