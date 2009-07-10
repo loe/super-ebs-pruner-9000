@@ -90,7 +90,7 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def new_pruner
-    @pruner = Pruner.new({:verbose => true, :live => true})
+    @pruner = Pruner.new({:volumes => [], :verbose => true, :live => true})
   end
   
   def setup
