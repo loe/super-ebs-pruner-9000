@@ -55,13 +55,13 @@ class Pruner
     volumes.each do |volume|
       
       # Gather the snapshots that might fall in the rule's time window.
-      vulnerable_snaps = snapshots(volume).select { |snap| snap[:aws_started_at] > rule[:after] && snap[:aws_started_at] <= rule[:before]}
+      vulnerable_snaps = snapshots(volume).select { |snap| snap[:aws_started_at] > rule[:after] && snap[:aws_started_at] < rule[:before]}
       
       # Step across the rule's time window one interval at a time, keeping the last snapshot in that window.
       window_start = rule[:before] - rule[:interval]
       while window_start > rule[:after] do
         # Gather snaps in the window
-        snaps_in_window = vulnerable_snaps.select { |snap| snap[:aws_started_at] > window_start && snap[:aws_started_at] <= window_start + rule[:interval]}
+        snaps_in_window = vulnerable_snaps.select { |snap| snap[:aws_started_at] >= window_start && snap[:aws_started_at] < window_start + rule[:interval]}
         # The first one in the selection survives
         keeper = snaps_in_window.pop
         # Send the rest to die.
