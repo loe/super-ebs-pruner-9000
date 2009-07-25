@@ -20,7 +20,7 @@ OptionParser.new do |opts|
   
   opts.on('--volumes vol-1,vol-2,vol-3', Array, 'List of volumes to prune, skipping will default to all volumes on the account') do |list|
     list.each do |v|
-      options[:volumes] << {:aws_id => v}
+      options[:volumes] << v
     end
   end
   

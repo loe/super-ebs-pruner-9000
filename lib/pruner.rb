@@ -7,7 +7,7 @@ require File.expand_path(File.dirname(__FILE__) + '/pruner/silence_ssl_warning')
 
 class Pruner
   attr_reader :options
-  attr_accessor :ec2, :volumes, :snapshots, :old_snapshots
+  attr_accessor :ec2, :volumes, :all_snapshots, :old_snapshots
   
   NOW = Time.now
   
@@ -53,22 +53,26 @@ class Pruner
   end
   
   def apply_rule(rule)
-    # Gather the snapshots that might fall in the rule's time window.
-    vulnerable_snaps = snapshots.select { |snap| snap[:aws_started_at] > rule[:after] && snap[:aws_started_at] < rule[:before]}
-    
-    # Step across the rule's time window one interval at a time, keeping the last snapshot in that window.
-    window_start = rule[:before] - rule[:interval]
-    while window_start > rule[:after] do
-      # Gather snaps in the window
-      snaps_in_window = vulnerable_snaps.select { |snap| snap[:aws_started_at] > window_start && snap[:aws_started_at] < window_start + rule[:interval]}
-      # The first one in the selection survives
-      keeper = snaps_in_window.pop
-      # Send the rest to die.
-      @old_snapshots += snaps_in_window
-      # Shrink the window
-      window_start -= rule[:interval]
+    volumes.each do |volume|
+      
+      # Gather the snapshots that might fall in the rule's time window.
+      vulnerable_snaps = snapshots(volume).select { |snap| snap[:aws_started_at] > rule[:after] && snap[:aws_started_at] <= rule[:before]}
+      
+      # Step across the rule's time window one interval at a time, keeping the last snapshot in that window.
+      window_start = rule[:before] - rule[:interval]
+      while window_start > rule[:after] do
+        # Gather snaps in the window
+        snaps_in_window = vulnerable_snaps.select { |snap| snap[:aws_started_at] > window_start && snap[:aws_started_at] <= window_start + rule[:interval]}
+        # The first one in the selection survives
+        keeper = snaps_in_window.pop
+        # Send the rest to die.
+        @old_snapshots += snaps_in_window
+        # Shrink the window
+        window_start -= rule[:interval]
+      end
     end
-    old_snapshots.uniq!
+    
+    old_snapshots
   end
   
   def remove_snapshots
@@ -77,6 +81,7 @@ class Pruner
       puts "  #{snap[:aws_id]} - #{snap[:aws_started_at]} (#{snap[:aws_volume_id]})" if options[:verbose]
       ec2.delete_snapshot(snap[:aws_id]) if options[:live]
     end
+    
     old_snapshots
   end
   
@@ -85,12 +90,14 @@ class Pruner
   end
   
   def volumes
-    @volumes ||= options[:volumes].empty? ? ec2.describe_volumes : options[:volumes]
+    @volumes ||= options[:volumes].empty? ? ec2.describe_volumes.map {|vol| vol[:aws_id] } : options[:volumes]
   end
   
-  def snapshots
-    @snapshots ||= ec2.describe_snapshots.select do |snap|
-      volumes.any? { |vol| vol[:aws_id] == snap[:aws_volume_id]}
-    end
+  def all_snapshots
+    @all_snapshots ||= ec2.describe_snapshots
+  end
+  
+  def snapshots(volume)
+    all_snapshots.select { |snap| volume == snap[:aws_volume_id] }
   end
 end

@@ -86,12 +86,12 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def snapshots_array_bar
-     twice_hourly_yesterday('vol-bar') + twice_daily_last_week('vol-bar') + daily_last_month('vol-bar') + twice_weekly_last_quarter('vol-bar') + weekly_two_years_ago('vol-bar')
-   end
+    twice_hourly_yesterday('vol-bar') + twice_daily_last_week('vol-bar') + daily_last_month('vol-bar') + twice_weekly_last_quarter('vol-bar') + weekly_two_years_ago('vol-bar')
+  end
    
-   def snapshots_array_baz
-     twice_hourly_yesterday('vol-baz') + twice_daily_last_week('vol-baz') + daily_last_month('vol-baz') + twice_weekly_last_quarter('vol-baz') + weekly_two_years_ago('vol-baz')
-    end
+  def snapshots_array_baz
+    twice_hourly_yesterday('vol-baz') + twice_daily_last_week('vol-baz') + daily_last_month('vol-baz') + twice_weekly_last_quarter('vol-baz') + weekly_two_years_ago('vol-baz')
+  end
   
   def mock_aws
     @mock_ec2 = mock()
@@ -128,64 +128,78 @@ class TestPruner < Test::Unit::TestCase
   
   def test_volumes
     @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
-    assert_equal @pruner.volumes, volumes_array
+    assert_equal @pruner.volumes, ['vol-foo', 'vol-bar', 'vol-baz']
   end
   
   def test_snapshots
-    @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo).once
-    assert_equal @pruner.snapshots, snapshots_array_foo
+    assert_equal @pruner.snapshots('vol-foo'), snapshots_array_foo
   end
   
   def test_apply_rule_HOURLY_AFTER_A_DAY
-    @pruner.snapshots = twice_hourly_yesterday('vol-foo')
+    @pruner.volumes = ['vol-foo']
+    @mock_ec2.expects(:describe_snapshots).returns(twice_hourly_yesterday('vol-foo'))
     @pruner.apply_rule(Pruner::HOURLY_AFTER_A_DAY)
     assert_equal @pruner.old_snapshots.size, 24
   end
   
   def test_apply_rule_DAILY_AFTER_A_WEEK
-    @pruner.snapshots = twice_daily_last_week('vol-foo')
+    @pruner.volumes = ['vol-foo']
+    @mock_ec2.expects(:describe_snapshots).returns(twice_daily_last_week('vol-foo'))
     @pruner.apply_rule(Pruner::DAILY_AFTER_A_WEEK)
     assert_equal @pruner.old_snapshots.size, 7
   end
   
   def test_apply_rule_EVERY_OTHER_DAY_AFTER_A_MONTH
-    @pruner.snapshots = daily_last_month('vol-foo')
+    @pruner.volumes = ['vol-foo']
+    @mock_ec2.expects(:describe_snapshots).returns(daily_last_month('vol-foo'))
     @pruner.apply_rule(Pruner::EVERY_OTHER_DAY_AFTER_A_MONTH)
     assert_equal @pruner.old_snapshots.size, 15
   end
   
   def test_apply_rule_WEEKLY_AFTER_A_QUARTER
-    @pruner.snapshots = twice_weekly_last_quarter('vol-foo')
+    @pruner.volumes = ['vol-foo']
+    @mock_ec2.expects(:describe_snapshots).returns(twice_weekly_last_quarter('vol-foo'))
     @pruner.apply_rule(Pruner::WEEKLY_AFTER_A_QUARTER)
     assert_equal @pruner.old_snapshots.size, 6
   end
   
   def test_apply_rule_EVERY_THREE_WEEKS_AFTER_TWO_YEARS
-    @pruner.snapshots = weekly_two_years_ago('vol-foo')
+    @pruner.volumes = ['vol-foo']
+    @mock_ec2.expects(:describe_snapshots).returns(weekly_two_years_ago('vol-foo'))
     @pruner.apply_rule(Pruner::EVERY_THREE_WEEKS_AFTER_TWO_YEARS)
     assert_equal @pruner.old_snapshots.size, 32
   end
   
   def test_apply_rules
-    @pruner.snapshots = snapshots_array_foo
+    @pruner.volumes = ['vol-foo']
+    @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo)
     @pruner.apply_rules
     assert_equal @pruner.old_snapshots.size, 24 + 7 + 15 + 6 + 32
   end
   
   def test_remove_snapshots
     dead_snaps = 24 + 7 + 15 + 6 + 32
-    @pruner.snapshots = snapshots_array_foo
-    @pruner.apply_rules
+    @pruner.volumes = ['vol-foo']
+    @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo)
     @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
+    @pruner.apply_rules
     @pruner.remove_snapshots
   end
   
-  def test_prune!
+  def test_one_volume_prune!
     dead_snaps = 24 + 7 + 15 + 6 + 32
+    @mock_ec2.expects(:describe_volumes).returns([{:aws_id => "vol-foo"}]).once
+    @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo).once
+    @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
+    @pruner.prune!
+  end
+  
+  def test_multiple_volumes_prune!
+    dead_snaps = (24 + 7 + 15 + 6 + 32) * 3 # one for each array!
     @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo + snapshots_array_bar + snapshots_array_baz).once
-    @mock_ec2.expects(:delete_snapshot).times(dead_snaps * 3)
+    @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
     @pruner.prune!
   end
 end
