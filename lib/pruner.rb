@@ -1,4 +1,3 @@
-require 'rubygems'
 require 'right_aws'
 require 'activesupport'
 

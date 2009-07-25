@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
      "lib/pruner.rb",
      "lib/pruner/silence_ssl_warning.rb",
      "lib/pruner/version.rb",
+     "super-ebs-pruner-9000.gemspec",
      "test/test_pruner.rb"
   ]
   s.homepage = %q{http://github.com/loe/super-ebs-pruner-9000}
@@ -35,8 +36,11 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
+      s.add_runtime_dependency(%q<right_aws>, ["= 1.10.0"])
     else
+      s.add_dependency(%q<right_aws>, ["= 1.10.0"])
     end
   else
+    s.add_dependency(%q<right_aws>, ["= 1.10.0"])
   end
 end

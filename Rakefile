@@ -9,6 +9,7 @@ begin
     gemspec.email = "andrew@andrewloe.com"
     gemspec.homepage = "http://github.com/loe/super-ebs-pruner-9000"
     gemspec.authors = ["W. Andrew Loe III"]
+    gemspec.add_dependency('right_aws', '>=1.10.0')
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
