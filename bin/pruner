@@ -21,7 +21,7 @@ OptionParser.new do |opts|
   end
   
   options[:live] = false
-  opts.on('-l', '--[not-]live', 'Run live') do |l|
+  opts.on('-l', '--[no-]live', 'Run live') do |l|
     options[:live] = l
   end
   
