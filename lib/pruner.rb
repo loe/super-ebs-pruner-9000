@@ -93,7 +93,7 @@ class Pruner
   end
   
   def all_snapshots
-    @all_snapshots ||= ec2.describe_snapshots
+    @all_snapshots ||= ec2.describe_snapshots.select { |snap| snap[:aws_status] == 'completed' }
   end
   
   def snapshots(volume)
