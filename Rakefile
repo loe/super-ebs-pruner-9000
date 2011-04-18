@@ -10,7 +10,7 @@ begin
     gemspec.homepage = "http://github.com/loe/super-ebs-pruner-9000"
     gemspec.authors = ["W. Andrew Loe III"]
     gemspec.add_dependency('right_aws', '~> 1.10.0')
-    gemspec.add_dependency('active_support', '~> 2.3.5')
+    gemspec.add_dependency('activesupport', '~> 2.3')
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
