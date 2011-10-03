@@ -18,20 +18,16 @@ class Pruner
                                         :before => NOW - 1.week,
                                         :interval => 24.hours,
                                         :name => 'Daily After A Week'}
-  EVERY_OTHER_DAY_AFTER_A_MONTH =      {:after => NOW - 3.month,
-                                        :before => NOW - 1.month,
-                                        :interval => 48.hours,
-                                        :name => 'Every Other Day After A Month'}
-  WEEKLY_AFTER_A_QUARTER =             {:after => NOW - 2.years,
-                                        :before => NOW - 3.months,
+  WEEKLY_AFTER_A_MONTH =               {:after => NOW - 3.months,
+                                        :before => NOW - 1.week,
                                         :interval => 1.week,
-                                        :name => 'Weekly After A Quarter'}
-  EVERY_THREE_WEEKS_AFTER_TWO_YEARS =  {:after => NOW - 10.years,
-                                        :before => NOW - 2.years,
-                                        :interval => 3.weeks,
-                                        :name => 'Every Three Weeks After Two Years'}
+                                        :name => 'Weekly After A Month'}
+  MONTHLY_AFTER_A_QUARTER =            {:after => NOW - 10.years,
+                                        :before => NOW - 3.months,
+                                        :interval => 1.month,
+                                        :name => 'Monthly After A Quarter'}
   
-  RULES = [HOURLY_AFTER_A_DAY, DAILY_AFTER_A_WEEK, EVERY_OTHER_DAY_AFTER_A_MONTH, WEEKLY_AFTER_A_QUARTER, EVERY_THREE_WEEKS_AFTER_TWO_YEARS]
+  RULES = [HOURLY_AFTER_A_DAY, DAILY_AFTER_A_WEEK, WEEKLY_AFTER_A_MONTH, MONTHLY_AFTER_A_QUARTER]
   
   def initialize(options ={})
     @options =        options
