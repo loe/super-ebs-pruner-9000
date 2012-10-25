@@ -167,11 +167,11 @@ class TestPruner < Test::Unit::TestCase
     @pruner.volumes = ['vol-foo']
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo)
     @pruner.apply_rules
-    assert_equal 24 + 7 + 25 + 10 + 49, @pruner.old_snapshots.size
+    assert_equal 24 + 7 + 31 + 46, @pruner.old_snapshots.size
   end
   
   def test_remove_snapshots
-    dead_snaps = 24 + 7 + 25 + 10 + 49
+    dead_snaps = 24 + 7 + 31 + 46
     @pruner.volumes = ['vol-foo']
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo)
     @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
@@ -180,7 +180,7 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def test_one_volume_prune!
-    dead_snaps = 24 + 7 + 25 + 10 + 49
+    dead_snaps = 24 + 7 + 31 + 46
     @mock_ec2.expects(:describe_volumes).returns([{:aws_id => "vol-foo"}]).once
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo).once
     @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
@@ -188,7 +188,7 @@ class TestPruner < Test::Unit::TestCase
   end
   
   def test_multiple_volumes_prune!
-    dead_snaps = (24 + 7 + 25 + 10 + 49) * 3 # one for each array!
+    dead_snaps = (24 + 7 + 31 + 46) * 3 # one for each array!
     @mock_ec2.expects(:describe_volumes).returns(volumes_array).once
     @mock_ec2.expects(:describe_snapshots).returns(snapshots_array_foo + snapshots_array_bar + snapshots_array_baz).once
     @mock_ec2.expects(:delete_snapshot).times(dead_snaps)
