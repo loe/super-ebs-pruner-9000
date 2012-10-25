@@ -61,7 +61,7 @@ class Pruner
         # The first one in the selection survives
         keeper = snaps_in_window.pop
         # Send the rest to die.
-        @old_snapshots += snaps_in_window
+        @old_snapshots = @old_snapshots | snaps_in_window
         # Shrink the window
         window_start -= rule[:interval]
       end
@@ -72,7 +72,7 @@ class Pruner
   
   def remove_snapshots
     puts "Removing #{old_snapshots.size} Snapshots:" if options[:verbose]
-    old_snapshots.uniq.each do |snap|
+    old_snapshots.each do |snap|
       puts "  #{snap[:aws_id]} - #{snap[:aws_started_at]} (#{snap[:aws_volume_id]})" if options[:verbose]
       ec2.delete_snapshot(snap[:aws_id]) if options[:live]
     end
