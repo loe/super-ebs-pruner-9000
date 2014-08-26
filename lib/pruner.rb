@@ -1,5 +1,5 @@
 require 'right_aws'
-require 'active_support'
+require 'active_support/all'
 
 require File.expand_path(File.dirname(__FILE__) + '/pruner/version')
 require File.expand_path(File.dirname(__FILE__) + '/pruner/silence_ssl_warning')
