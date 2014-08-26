@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "super-ebs-pruner-9000"
-  s.version = "1.2.1"
+  s.version = "1.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["W. Andrew Loe III"]
-  s.date = "2012-10-25"
+  s.date = "2014-08-26"
   s.description = "Thins EBS volume snapshots."
   s.email = "andrew@andrewloe.com"
   s.executables = ["pruner"]
