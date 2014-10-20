@@ -8,7 +8,7 @@ class Pruner
   attr_reader :options
   attr_accessor :ec2, :volumes, :all_snapshots, :old_snapshots
   
-  NOW = Time.now
+  NOW = Time.now.utc
   
   HOURLY_AFTER_A_DAY =                 {:after => NOW - 1.week,
                                         :before => NOW - 1.day,
